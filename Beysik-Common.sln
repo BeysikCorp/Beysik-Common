@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35806.99 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Beysik-Common", "Beysik-Common.csproj", "{024F1847-A24D-433C-9623-AD24E55ACF28}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{024F1847-A24D-433C-9623-AD24E55ACF28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{024F1847-A24D-433C-9623-AD24E55ACF28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{024F1847-A24D-433C-9623-AD24E55ACF28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{024F1847-A24D-433C-9623-AD24E55ACF28}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4D72C935-FB7F-4688-B50B-CEB378C04CB5}
+	EndGlobalSection
+EndGlobal
