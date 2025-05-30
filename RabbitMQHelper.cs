@@ -46,20 +46,20 @@ namespace Beysik_Common
         public Task ConsumeMessages(string reqmessage)
         {
 
-            var consumer = new EventingBasicConsumer(_channel);
+            var consumer = new AsyncEventingBasicConsumer(_channel);
             //var message = "";
-            do
-            {
-                consumer.Received += (model, ea) =>
+            //do
+            //{
+                consumer.Received += async (model, ea) =>
                 {
                     var body = ea.Body.ToArray();
                     _message = System.Text.Encoding.UTF8.GetString(body);
-
+                    await Task.Yield();
                     //Console.WriteLine($" [x] Received {message}");
                 };
                 _channel.BasicConsume(queue: _queueName, autoAck: true, consumer: consumer);
-            }
-            while (!(reqmessage.Equals(_message)));
+            //}
+            //while (!(reqmessage.Equals(_message)));
 
 
             return Task.CompletedTask;
