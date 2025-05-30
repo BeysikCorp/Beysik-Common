@@ -7,62 +7,101 @@ namespace Beysik_Common
     public class RabbitMqHelper
     {
         private readonly string _hostName;
-        private readonly string _queueName;
+        private string _queueName;
         private readonly IConnection _connection;
         private readonly IModel _channel;
         public string _message { get; set; } = string.Empty;
 
-        public RabbitMqHelper(string hostname, string queueName)
+        public RabbitMqHelper(string hostname)
         {
             _hostName = hostname;
-            _queueName = queueName;
 
-            var factory = new ConnectionFactory() { HostName = hostname, UserName="guest", Password="guest" };
+            var factory = new ConnectionFactory() { HostName = _hostName, UserName="guest", Password="guest" };
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
 
-            _channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+            //_channel.QueueDeclare(queue: queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+        }
+
+        public void EnsureQueueExists(string queueName)
+        {
+            // Ensure the queue exists, this will create it if it doesn't
+            _queueName = queueName;
+            
+            _channel.QueueDeclare(queue: _queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
         }
 
 
-        public Task PublishMessage(string message)
+        public Task PublishMessage(string queueName, string message)
         {
-            var body = System.Text.Encoding.UTF8.GetBytes(message);
+            EnsureQueueExists(queueName);
+            var body = Encoding.UTF8.GetBytes(message);
 
             try
             {
-                _channel.BasicPublish(exchange: string.Empty, routingKey: _queueName, body: body);
+                _channel.BasicPublish(exchange: string.Empty, routingKey: queueName, body: body);
             }
             catch (Exception ex)
             {
-                // Optionally log the exception or handle it as needed
                 throw new InvalidOperationException("Failed to publish message to RabbitMQ.", ex);
             }
 
-            //Console.WriteLine($" [x] Sent {message}");
             return Task.CompletedTask;
         }
 
-        public Task ConsumeMessages(string reqmessage)
+        public async Task<string> ConsumeMessagesAsync(string queueName, string reqmessage)
         {
+            EnsureQueueExists(queueName);
 
+            var tcs = new TaskCompletionSource<string>();
             var consumer = new AsyncEventingBasicConsumer(_channel);
-            //var message = "";
-            //do
-            //{
-                consumer.Received += async (model, ea) =>
+            string? consumerTag = null;
+
+            consumer.Received += async (model, ea) =>
+            {
+                var body = ea.Body.ToArray();
+                var message = Encoding.UTF8.GetString(body);
+
+                if (message == reqmessage)
                 {
-                    var body = ea.Body.ToArray();
-                    _message = System.Text.Encoding.UTF8.GetString(body);
-                    await Task.Yield();
-                    //Console.WriteLine($" [x] Received {message}");
-                };
-                _channel.BasicConsume(queue: _queueName, autoAck: true, consumer: consumer);
-            //}
-            //while (!(reqmessage.Equals(_message)));
+                    tcs.TrySetResult(message);
+                    if (consumerTag != null)
+                    {
+                        _channel.BasicCancel(consumerTag); // Stop consuming
+                    }
+                }
+                await Task.CompletedTask;
+            };
 
+            consumerTag = _channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
 
-            return Task.CompletedTask;
+            return await tcs.Task;
+        }
+
+        public async Task<string> ConsumeSingleMessageAsync(string queueName)
+        {
+            EnsureQueueExists(queueName);
+
+            var tcs = new TaskCompletionSource<string>();
+            var consumer = new AsyncEventingBasicConsumer(_channel);
+            string? consumerTag = null;
+
+            consumer.Received += async (model, ea) =>
+            {
+                var body = ea.Body.ToArray();
+                var message = Encoding.UTF8.GetString(body);
+
+                tcs.TrySetResult(message);
+                if (consumerTag != null)
+                {
+                    _channel.BasicCancel(consumerTag); // Stop consuming
+                }
+                await Task.CompletedTask;
+            };
+
+            consumerTag = _channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
+
+            return await tcs.Task;
         }
 
         public void CloseConnection()
